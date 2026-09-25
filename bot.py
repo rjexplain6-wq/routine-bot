@@ -4,7 +4,7 @@ from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, ContextTypes
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-import pytz
+import pytz, asyncio
 
 logging.basicConfig(level=logging.INFO)
 
@@ -72,7 +72,6 @@ def check_reminders():
     c.execute("SELECT chat_id, text FROM reminders WHERE time=?", (now,))
     for chat_id, text in c.fetchall():
         try:
-            import asyncio
             asyncio.run(bot.send_message(chat_id=chat_id, text=f"⏰ রিমাইন্ডার: {text}"))
         except Exception as e:
             logging.error(e)
@@ -83,7 +82,6 @@ scheduler.start()
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    import asyncio
     update = Update.de_json(request.get_json(force=True), bot)
     asyncio.run(application.process_update(update))
     return "ok"
@@ -92,10 +90,7 @@ def webhook():
 def index():
     return "Bot is running"
 
-@app.before_first_request
-def set_webhook():
-    import asyncio
-    asyncio.run(bot.set_webhook(url=f"{URL}/{TOKEN}"))
+asyncio.run(bot.set_webhook(url=f"{URL}/{TOKEN}"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
